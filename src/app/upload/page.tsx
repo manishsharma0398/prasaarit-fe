@@ -40,6 +40,13 @@ export default function UploadPage() {
       // Step 1: Get presigned URL from backend
       const urlResponse = await fetch("/api/upload-url", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contentType: selectedFile.type,
+          fileSize: selectedFile.size,
+        }),
       });
 
       if (!urlResponse.ok) {
