@@ -4,7 +4,13 @@ import { useState } from "react";
 import { UploadDropzone } from "@/components/upload/upload-dropzone";
 import { UploadButton } from "@/components/upload/upload-button";
 import { UploadProgress } from "@/components/upload/upload-progress";
-import { Empty } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { FileVideo } from "lucide-react";
 
 type UploadState = "idle" | "file-selected" | "uploading" | "success" | "error";
@@ -118,7 +124,7 @@ export default function UploadPage() {
               <>
                 <UploadDropzone
                   onFileSelect={handleFileSelect}
-                  isDisabled={state === "uploading"}
+                  isDisabled={state === "file-selected"}
                 />
                 {selectedFile && state === "file-selected" && (
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
@@ -192,11 +198,18 @@ export default function UploadPage() {
             Your Uploaded Videos
           </h2>
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <Empty
-              icon={FileVideo}
-              title="No videos yet"
-              description="Your uploaded videos will appear here once you complete your first upload."
-            />
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileVideo />
+                </EmptyMedia>
+                <EmptyTitle>No videos yet</EmptyTitle>
+                <EmptyDescription>
+                  Your uploaded videos will appear here once you complete your
+                  first upload.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </div>
         </div>
       </div>
