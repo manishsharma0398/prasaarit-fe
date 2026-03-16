@@ -12,6 +12,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { FileVideo } from "lucide-react";
+import { s3PresignResponse } from "@/types/upload-url";
 
 type UploadState = "idle" | "file-selected" | "uploading" | "success" | "error";
 
@@ -38,7 +39,7 @@ export default function UploadPage() {
 
     try {
       // Step 1: Get presigned URL from backend
-      const urlResponse = await fetch("/api/upload-url", {
+      const urlResponse: Response = await fetch("/api/upload-url", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,7 +54,7 @@ export default function UploadPage() {
         throw new Error("Failed to get upload URL");
       }
 
-      const { uploadUrl, videoId: newVideoId } = await urlResponse.json();
+      const { presignedUrl, videoId: newVideoId } = await urlResponse.json() as s3PresignResponse;
       setVideoId(newVideoId);
 
       // Step 2: Upload file to S3 using presigned URL
@@ -88,7 +89,7 @@ export default function UploadPage() {
       });
 
       // Start the upload
-      xhr.open("PUT", uploadUrl, true);
+      xhr.open("PUT", presignedUrl, true);
       xhr.setRequestHeader(
         "Content-Type",
         selectedFile.type || "application/octet-stream",
@@ -179,23 +180,23 @@ export default function UploadPage() {
             {(state === "uploading" ||
               state === "success" ||
               state === "error") && (
-              <>
-                <UploadProgress
-                  status={state as "uploading" | "success" | "error"}
-                  progress={progress}
-                  videoId={videoId || undefined}
-                  errorMessage={errorMessage || undefined}
-                />
-                {(state === "success" || state === "error") && (
-                  <button
-                    onClick={handleReset}
-                    className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    Upload Another Video
-                  </button>
-                )}
-              </>
-            )}
+                <>
+                  <UploadProgress
+                    status={state as "uploading" | "success" | "error"}
+                    progress={progress}
+                    videoId={videoId || undefined}
+                    errorMessage={errorMessage || undefined}
+                  />
+                  {(state === "success" || state === "error") && (
+                    <button
+                      onClick={handleReset}
+                      className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Upload Another Video
+                    </button>
+                  )}
+                </>
+              )}
           </div>
         </div>
 

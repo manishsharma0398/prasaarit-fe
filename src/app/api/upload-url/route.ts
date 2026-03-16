@@ -1,8 +1,9 @@
+import { s3PresignResponse } from "@/types/upload-url";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs"; // ensure Node runtime (important for AWS SDK later)
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<s3PresignResponse | Response> {
   try {
     const body = await req.json();
     const { contentType, fileSize } = body ?? {};
@@ -15,10 +16,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_GW_URL;
+    const apiUrl = process.env.API_GW_URL;
+
+    console.log("API URL:", apiUrl);
+    console.log("Calling:", `${apiUrl}/generate-presigned-url`);
 
     if (!apiUrl) {
-      console.error("NEXT_PUBLIC_API_GW_URL env variable is missing");
+      console.error("API_GW_URL env variable is missing");
       return Response.json(
         { error: "Server misconfiguration" },
         { status: 500 },
@@ -42,7 +46,13 @@ export async function POST(req: NextRequest) {
       try {
         const errorData = await response.json();
         errorMessage = errorData?.message || errorMessage;
-      } catch {
+      } catch (err) {
+        console.error("Presign route error:", err);
+
+        return Response.json(
+          { error: String(err) },
+          { status: 500 }
+        );
         // API returned non-JSON
       }
 
@@ -52,12 +62,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const data: s3PresignResponse = await response.json();
 
     return Response.json(data);
   } catch (err) {
     console.error("Presign route error:", err);
 
-    return Response.json({ error: err }, { status: 500 });
+    return Response.json({ error: String(err) }, { status: 500 });
   }
 }
