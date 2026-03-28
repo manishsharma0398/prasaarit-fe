@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
+import { Button } from '@/components/ui/button';
+import { Upload } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface UploadButtonProps {
   isDisabled: boolean;
@@ -11,7 +11,7 @@ interface UploadButtonProps {
   fileName?: string;
 }
 
-export function UploadButton({ isDisabled, isLoading, onClick, fileName }: UploadButtonProps) {
+export const UploadButton = ({ isDisabled, isLoading, onClick, fileName }: UploadButtonProps) => {
   return (
     <div className="space-y-3">
       {fileName && (

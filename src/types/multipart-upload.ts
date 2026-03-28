@@ -1,4 +1,4 @@
-import { CompletedPart } from "./multipart-upload-local-storage";
+import { CompletedPart } from './multipart-upload-local-storage';
 
 export interface MultipartUploadInitiateRequest {
   contentType: string;

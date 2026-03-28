@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import axios from "axios";
-import { useRef, useState } from "react";
-import { UploadDropzone } from "@/components/upload/upload-dropzone";
-import { UploadButton } from "@/components/upload/upload-button";
-import { UploadProgress } from "@/components/upload/upload-progress";
+import axios from 'axios';
+import { useRef, useState } from 'react';
+import { UploadDropzone } from '@/components/upload/upload-dropzone';
+import { UploadButton } from '@/components/upload/upload-button';
+import { UploadProgress } from '@/components/upload/upload-progress';
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { FileVideo } from "lucide-react";
-import { s3PresignResponse } from "@/types/upload-url";
-import { CHUNK_SIZE } from "@/utils/constants";
+} from '@/components/ui/empty';
+import { FileVideo } from 'lucide-react';
+import { s3PresignResponse } from '@/types/upload-url';
+import { CHUNK_SIZE } from '@/utils/constants';
 import {
   MultipartUploadCompleteResponse,
   MultipartUploadInitiateResponse,
-} from "@/types/multipart-upload";
-import { MultipartUploadLocalStorage, CompletedPart } from "@/types/multipart-upload-local-storage";
+} from '@/types/multipart-upload';
+import { MultipartUploadLocalStorage, CompletedPart } from '@/types/multipart-upload-local-storage';
 
-type UploadState = "idle" | "file-selected" | "uploading" | "success" | "error";
+type UploadState = 'idle' | 'file-selected' | 'uploading' | 'success' | 'error';
 
-export default function UploadPage() {
-  const [state, setState] = useState<UploadState>("idle");
+const UploadPage = () => {
+  const [state, setState] = useState<UploadState>('idle');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function UploadPage() {
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
-    setState("file-selected");
+    setState('file-selected');
     setProgress(0);
     setVideoId(null);
     setErrorMessage(null);
@@ -92,21 +92,21 @@ export default function UploadPage() {
       const chunkSize = end - start;
 
       const res = await axios.post<s3PresignResponse>(
-        "/api/upload-url",
+        '/api/upload-url',
         {
           s3Key,
           uploadId,
           partNumber,
           contentType: file.type,
           fileSize: file.size,
-          type: "multipart",
+          type: 'multipart',
         },
         { signal: controller.signal }
       );
 
       const uploadedChunk = await axios.put(res.data.presignedUrl, chunk, {
         headers: {
-          "Content-Type": file.type || "application/octet-stream",
+          'Content-Type': file.type || 'application/octet-stream',
         },
         signal: controller.signal,
         onUploadProgress: (event) => {
@@ -131,7 +131,7 @@ export default function UploadPage() {
     }
 
     const res = await axios.post<MultipartUploadCompleteResponse>(
-      "/api/multipart-upload/complete",
+      '/api/multipart-upload/complete',
       {
         s3Key,
         uploadId,
@@ -144,7 +144,7 @@ export default function UploadPage() {
     localStorage.removeItem(key);
     setVideoId(res.data.uploadId);
     setProgress(100);
-    setState("success");
+    setState('success');
     setResumeData(null);
   };
 
@@ -153,7 +153,7 @@ export default function UploadPage() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    setState("uploading");
+    setState('uploading');
     setProgress(0);
 
     const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
@@ -161,7 +161,7 @@ export default function UploadPage() {
 
     try {
       const res1 = await axios.post<MultipartUploadInitiateResponse>(
-        "/api/multipart-upload/initiate",
+        '/api/multipart-upload/initiate',
         { contentType: selectedFile.type, fileSize: selectedFile.size },
         { signal: controller.signal }
       );
@@ -184,9 +184,9 @@ export default function UploadPage() {
       await runUpload(selectedFile, s3Key, uploadId, [], controller);
     } catch (error) {
       if (axios.isCancel(error)) return;
-      const message = error instanceof Error ? error.message : "Upload failed";
+      const message = error instanceof Error ? error.message : 'Upload failed';
       setErrorMessage(message);
-      setState("error");
+      setState('error');
       setProgress(0);
     }
   };
@@ -196,7 +196,7 @@ export default function UploadPage() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    setState("uploading");
+    setState('uploading');
     setVideoId(resumeData.uploadId);
 
     try {
@@ -209,9 +209,9 @@ export default function UploadPage() {
       );
     } catch (error) {
       if (axios.isCancel(error)) return;
-      const message = error instanceof Error ? error.message : "Upload failed";
+      const message = error instanceof Error ? error.message : 'Upload failed';
       setErrorMessage(message);
-      setState("error");
+      setState('error');
       setProgress(0);
     }
   };
@@ -226,7 +226,7 @@ export default function UploadPage() {
     // 2. Tell S3 to discard all uploaded parts
     if (meta) {
       try {
-        await axios.post("/api/multipart-upload/abort", {
+        await axios.post('/api/multipart-upload/abort', {
           s3Key: meta.s3Key,
           uploadId: meta.uploadId,
         });
@@ -247,11 +247,11 @@ export default function UploadPage() {
     setProgress(0);
     setVideoId(null);
     setErrorMessage(null);
-    setState("file-selected");
+    setState('file-selected');
   };
 
   const handleReset = () => {
-    setState("idle");
+    setState('idle');
     setSelectedFile(null);
     setProgress(0);
     setVideoId(null);
@@ -273,13 +273,13 @@ export default function UploadPage() {
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="p-8 space-y-8">
             {/* State: Idle or File Selected */}
-            {(state === "idle" || state === "file-selected") && (
+            {(state === 'idle' || state === 'file-selected') && (
               <>
                 <UploadDropzone
                   onFileSelect={handleFileSelect}
-                  isDisabled={state === "file-selected"}
+                  isDisabled={state === 'file-selected'}
                 />
-                {selectedFile && state === "file-selected" && (
+                {selectedFile && state === 'file-selected' && (
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -291,12 +291,12 @@ export default function UploadPage() {
                             <span className="font-medium">Name:</span> {selectedFile.name}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            <span className="font-medium">Size:</span>{" "}
+                            <span className="font-medium">Size:</span>{' '}
                             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            <span className="font-medium">Type:</span>{" "}
-                            {selectedFile.type || "Unknown"}
+                            <span className="font-medium">Type:</span>{' '}
+                            {selectedFile.type || 'Unknown'}
                           </p>
                         </div>
                       </div>
@@ -309,7 +309,7 @@ export default function UploadPage() {
                     </div>
                   </div>
                 )}
-                {state === "file-selected" && (
+                {state === 'file-selected' && (
                   <>
                     {resumeData && (
                       <div className="flex items-start gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
@@ -342,16 +342,16 @@ export default function UploadPage() {
             )}
 
             {/* State: Uploading, Success, or Error */}
-            {(state === "uploading" || state === "success" || state === "error") && (
+            {(state === 'uploading' || state === 'success' || state === 'error') && (
               <>
                 <UploadProgress
-                  status={state as "uploading" | "success" | "error"}
+                  status={state as 'uploading' | 'success' | 'error'}
                   progress={progress}
                   videoId={videoId || undefined}
                   errorMessage={errorMessage || undefined}
-                  onAbort={state === "uploading" ? handleAbort : undefined}
+                  onAbort={state === 'uploading' ? handleAbort : undefined}
                 />
-                {(state === "success" || state === "error") && (
+                {(state === 'success' || state === 'error') && (
                   <button
                     onClick={handleReset}
                     className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -386,4 +386,6 @@ export default function UploadPage() {
       </div>
     </main>
   );
-}
+};
+
+export default UploadPage;

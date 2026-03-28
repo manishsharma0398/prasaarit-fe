@@ -92,17 +92,31 @@ commits stay fast regardless of project size.
 | `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.mjs` | `prettier --write` → `eslint --fix` |
 | `*.json`, `*.css`, `*.md`                 | `prettier --write`                  |
 
-### Run on all files manually
+### First-time setup — run on all existing files (once)
 
-Useful when you first clone, add a new hook, or want to reformat everything at once:
+When setting up pre-commit hooks on an existing project, run linters on the entire
+codebase once to pay off the formatting debt. From the next commit onwards,
+lint-staged handles it automatically on staged files only:
 
 ```bash
-# Format everything with prettier
+# 1. Format all files
 pnpm exec prettier --write .
 
-# Lint and fix everything with eslint
+# 2. Lint and fix all files
 pnpm exec eslint --fix src/
+
+# 3. Commit the cleanup
+git add .
+git commit -m "chore: apply formatting to all files"
 ```
+
+After this, you never need to run on all files again.
+
+### Every commit after that — staged files only
+
+lint-staged asks git for the list of staged files and only passes those to
+prettier/eslint. Files you didn't touch are never processed, so commits stay fast
+regardless of project size.
 
 ### Run lint-staged manually (simulates what runs on commit)
 

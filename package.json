@@ -80,7 +80,7 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": [
       "prettier --write",
-      "eslint --fix"
+      "eslint --fix --no-warn-ignored"
     ],
     "*.{json,css,md}": [
       "prettier --write"
