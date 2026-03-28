@@ -2,75 +2,43 @@ import {
   MultipartUploadCompleteRequest,
   MultipartUploadCompleteResponse,
 } from "@/types/multipart-upload";
+import { upstream } from "@/lib/upstream";
 import { NextRequest } from "next/server";
+import axios from "axios";
 
-export const runtime = "nodejs"; // ensure Node runtime (important for AWS SDK later)
+export const runtime = "nodejs";
 
-export async function POST(
-  req: NextRequest,
-): Promise<MultipartUploadCompleteResponse | Response> {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const body: MultipartUploadCompleteRequest = await req.json();
-    const { parts, s3Key, uploadId } = body ?? {};
+    const { parts, s3Key, uploadId }: MultipartUploadCompleteRequest = await req.json();
 
-    // Validate input
-    if (!s3Key || !uploadId || !parts || !Array.isArray(parts)) {
-      return Response.json(
-        { error: "s3Key, uploadId, and parts are required" },
-        { status: 400 },
-      );
+    if (!s3Key || !uploadId) {
+      return Response.json({ error: "s3Key and uploadId are required" }, { status: 400 });
     }
 
-    const apiUrl = "http://127.0.0.1:8000";
-    // const apiUrl = process.env.API_GW_URL;
-
-    console.log("API URL:", apiUrl);
-    console.log("Calling:", `${apiUrl}/complete-multipart-upload`);
-
-    if (!apiUrl) {
-      console.error("API_GW_URL env variable is missing");
-      return Response.json(
-        { error: "Server misconfiguration" },
-        { status: 500 },
-      );
+    if (!Array.isArray(parts) || parts.length === 0) {
+      return Response.json({ error: "parts must be a non-empty array" }, { status: 400 });
     }
 
-    // Call API Gateway
-    const response = await fetch(`${apiUrl}/complete-multipart-upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ s3Key, uploadId, parts }),
-      cache: "no-store",
-    });
-
-    // Handle upstream errors safely
-    if (!response.ok) {
-      let errorMessage = "Failed to complete multipart upload";
-
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData?.message || errorMessage;
-      } catch (err) {
-        console.error("Complete multipart upload route error:", err);
-
-        return Response.json({ error: String(err) }, { status: 500 });
-        // API returned non-JSON
-      }
-
-      return Response.json(
-        { error: errorMessage },
-        { status: response.status },
-      );
+    if (!process.env.UPLOAD_API_BASE_URL) {
+      console.error("UPLOAD_API_BASE_URL env variable is missing");
+      return Response.json({ error: "Server misconfiguration" }, { status: 500 });
     }
 
-    const data: MultipartUploadCompleteResponse = await response.json();
+    const { data } = await upstream.post<MultipartUploadCompleteResponse>(
+      "/complete-multipart-upload",
+      { s3Key, uploadId, parts }
+    );
 
     return Response.json(data);
   } catch (err) {
-    console.error("Complete multipart upload route error:", err);
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status ?? 502;
+      const message = err.response?.data?.message ?? "Failed to complete multipart upload";
+      return Response.json({ error: message }, { status });
+    }
 
+    console.error("Complete multipart upload route error:", err);
     return Response.json({ error: String(err) }, { status: 500 });
   }
 }

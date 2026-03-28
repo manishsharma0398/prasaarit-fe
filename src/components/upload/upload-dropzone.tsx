@@ -9,10 +9,7 @@ interface UploadDropzoneProps {
   isDisabled?: boolean;
 }
 
-export function UploadDropzone({
-  onFileSelect,
-  isDisabled,
-}: UploadDropzoneProps) {
+export function UploadDropzone({ onFileSelect, isDisabled }: UploadDropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +74,7 @@ export function UploadDropzone({
         isDragActive && !isDisabled
           ? "border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/20"
           : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900/50",
-        isDisabled && "opacity-50 cursor-not-allowed",
+        isDisabled && "opacity-50 cursor-not-allowed"
       )}
     >
       <input
