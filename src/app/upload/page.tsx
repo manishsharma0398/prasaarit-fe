@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { useState } from "react";
 import { UploadDropzone } from "@/components/upload/upload-dropzone";
 import { UploadButton } from "@/components/upload/upload-button";
@@ -13,6 +14,12 @@ import {
 } from "@/components/ui/empty";
 import { FileVideo } from "lucide-react";
 import { s3PresignResponse } from "@/types/upload-url";
+import { CHUNK_SIZE } from "@/utils/constants";
+import {
+  MultipartUploadCompleteResponse,
+  MultipartUploadInitiateResponse,
+} from "@/types/multipart-upload";
+import { MultipartUploadLocalStorage } from "@/types/multipart-upload-local-storage";
 
 type UploadState = "idle" | "file-selected" | "uploading" | "success" | "error";
 
@@ -37,24 +44,77 @@ export default function UploadPage() {
     setState("uploading");
     setProgress(0);
 
+    const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+
     try {
       // Step 1: Get presigned URL from backend
-      const urlResponse: Response = await fetch("/api/upload-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const res1 = await axios.post<MultipartUploadInitiateResponse>(
+        "/api/multipart-upload/initiate",
+        {
           contentType: selectedFile.type,
           fileSize: selectedFile.size,
-        }),
-      });
+        },
+      );
 
-      if (!urlResponse.ok) {
-        throw new Error("Failed to get upload URL");
+      const { s3Key, uploadId } = res1.data;
+
+      setVideoId(uploadId);
+
+      const key = `${selectedFile.name}-${String(selectedFile.size)}-${selectedFile.lastModified}`;
+
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          s3Key,
+          uploadId,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          totalParts: totalChunks,
+          uploadedParts: [],
+        }),
+      );
+
+      for (let partNumber = 1; partNumber <= totalChunks; partNumber++) {
+        const chunk = selectedFile.slice(
+          (partNumber - 1) * CHUNK_SIZE,
+          partNumber * CHUNK_SIZE,
+        );
+
+        const res = await axios.post<s3PresignResponse>(
+          "/api/multipart-upload/get-presigned-url",
+          {
+            s3Key,
+            uploadId,
+            partNumber,
+            contentType: selectedFile.type,
+          },
+        );
+
+        const uploadedChumk = await axios.put(res.data.presignedUrl, chunk, {
+          headers: {
+            "Content-Type": selectedFile.type || "application/octet-stream",
+          },
+        });
+
+        const getFromLS = localStorage.getItem(key);
+
+        console.log("Presigned URL response: ", res.data);
       }
 
-      const { presignedUrl, videoId: newVideoId } = await urlResponse.json() as s3PresignResponse;
+      const res = await axios.post<MultipartUploadCompleteResponse>(
+        "/api/multipart-upload/complete",
+        {
+          s3Key,
+          uploadId,
+          parts: Array.from({ length: totalChunks }, (_, i) =>
+            (i + 1).toString(),
+          ),
+        },
+      );
+
+      return res;
+
+      const { presignedUrl, mediaId: newVideoId } = data;
       setVideoId(newVideoId);
 
       // Step 2: Upload file to S3 using presigned URL
@@ -180,23 +240,23 @@ export default function UploadPage() {
             {(state === "uploading" ||
               state === "success" ||
               state === "error") && (
-                <>
-                  <UploadProgress
-                    status={state as "uploading" | "success" | "error"}
-                    progress={progress}
-                    videoId={videoId || undefined}
-                    errorMessage={errorMessage || undefined}
-                  />
-                  {(state === "success" || state === "error") && (
-                    <button
-                      onClick={handleReset}
-                      className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Upload Another Video
-                    </button>
-                  )}
-                </>
-              )}
+              <>
+                <UploadProgress
+                  status={state as "uploading" | "success" | "error"}
+                  progress={progress}
+                  videoId={videoId || undefined}
+                  errorMessage={errorMessage || undefined}
+                />
+                {(state === "success" || state === "error") && (
+                  <button
+                    onClick={handleReset}
+                    className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Upload Another Video
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 

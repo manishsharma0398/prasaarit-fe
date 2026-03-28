@@ -1,9 +1,11 @@
-import { s3PresignResponse } from "@/types/upload-url";
+import { MultipartUploadInitiateResponse } from "@/types/multipart-upload";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs"; // ensure Node runtime (important for AWS SDK later)
 
-export async function POST(req: NextRequest): Promise<s3PresignResponse | Response> {
+export async function POST(
+  req: NextRequest,
+): Promise<MultipartUploadInitiateResponse | Response> {
   try {
     const body = await req.json();
     const { contentType, fileSize } = body ?? {};
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
     // const apiUrl = process.env.API_GW_URL;
 
     console.log("API URL:", apiUrl);
-    console.log("Calling:", `${apiUrl}/generate-presigned-url`);
+    console.log("Calling:", `${apiUrl}/initiate-multipart-upload`);
 
     if (!apiUrl) {
       console.error("API_GW_URL env variable is missing");
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
     }
 
     // Call API Gateway
-    const response = await fetch(`${apiUrl}/generate-presigned-url`, {
+    const response = await fetch(`${apiUrl}/initiate-multipart-upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
 
     // Handle upstream errors safely
     if (!response.ok) {
-      let errorMessage = "Failed to generate upload URL";
+      let errorMessage = "Failed to initiate multipart upload";
 
       try {
         const errorData = await response.json();
@@ -50,10 +52,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
       } catch (err) {
         console.error("Presign route error:", err);
 
-        return Response.json(
-          { error: String(err) },
-          { status: 500 }
-        );
+        return Response.json({ error: String(err) }, { status: 500 });
         // API returned non-JSON
       }
 
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
       );
     }
 
-    const data: s3PresignResponse = await response.json();
+    const data: MultipartUploadInitiateResponse = await response.json();
 
     return Response.json(data);
   } catch (err) {

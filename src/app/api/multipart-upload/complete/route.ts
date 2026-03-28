@@ -1,17 +1,22 @@
-import { s3PresignResponse } from "@/types/upload-url";
+import {
+  MultipartUploadCompleteRequest,
+  MultipartUploadCompleteResponse,
+} from "@/types/multipart-upload";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs"; // ensure Node runtime (important for AWS SDK later)
 
-export async function POST(req: NextRequest): Promise<s3PresignResponse | Response> {
+export async function POST(
+  req: NextRequest,
+): Promise<MultipartUploadCompleteResponse | Response> {
   try {
-    const body = await req.json();
-    const { contentType, fileSize } = body ?? {};
+    const body: MultipartUploadCompleteRequest = await req.json();
+    const { parts, s3Key, uploadId } = body ?? {};
 
     // Validate input
-    if (!contentType || !fileSize) {
+    if (!s3Key || !uploadId || !parts || !Array.isArray(parts)) {
       return Response.json(
-        { error: "contentType and fileSize are required" },
+        { error: "s3Key, uploadId, and parts are required" },
         { status: 400 },
       );
     }
@@ -20,7 +25,7 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
     // const apiUrl = process.env.API_GW_URL;
 
     console.log("API URL:", apiUrl);
-    console.log("Calling:", `${apiUrl}/generate-presigned-url`);
+    console.log("Calling:", `${apiUrl}/complete-multipart-upload`);
 
     if (!apiUrl) {
       console.error("API_GW_URL env variable is missing");
@@ -31,29 +36,26 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
     }
 
     // Call API Gateway
-    const response = await fetch(`${apiUrl}/generate-presigned-url`, {
+    const response = await fetch(`${apiUrl}/complete-multipart-upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ contentType, fileSize }),
+      body: JSON.stringify({ s3Key, uploadId, parts }),
       cache: "no-store",
     });
 
     // Handle upstream errors safely
     if (!response.ok) {
-      let errorMessage = "Failed to generate upload URL";
+      let errorMessage = "Failed to complete multipart upload";
 
       try {
         const errorData = await response.json();
         errorMessage = errorData?.message || errorMessage;
       } catch (err) {
-        console.error("Presign route error:", err);
+        console.error("Complete multipart upload route error:", err);
 
-        return Response.json(
-          { error: String(err) },
-          { status: 500 }
-        );
+        return Response.json({ error: String(err) }, { status: 500 });
         // API returned non-JSON
       }
 
@@ -63,11 +65,11 @@ export async function POST(req: NextRequest): Promise<s3PresignResponse | Respon
       );
     }
 
-    const data: s3PresignResponse = await response.json();
+    const data: MultipartUploadCompleteResponse = await response.json();
 
     return Response.json(data);
   } catch (err) {
-    console.error("Presign route error:", err);
+    console.error("Complete multipart upload route error:", err);
 
     return Response.json({ error: String(err) }, { status: 500 });
   }
