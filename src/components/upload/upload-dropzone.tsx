@@ -1,18 +1,15 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { Cloud } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useRef, useState } from 'react';
+import { Cloud } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface UploadDropzoneProps {
   onFileSelect: (file: File) => void;
   isDisabled?: boolean;
 }
 
-export function UploadDropzone({
-  onFileSelect,
-  isDisabled,
-}: UploadDropzoneProps) {
+export const UploadDropzone = ({ onFileSelect, isDisabled }: UploadDropzoneProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -20,7 +17,7 @@ export function UploadDropzone({
     e.preventDefault();
     e.stopPropagation();
     if (!isDisabled) {
-      setIsDragActive(e.type === "dragenter" || e.type === "dragover");
+      setIsDragActive(e.type === 'dragenter' || e.type === 'dragover');
     }
   };
 
@@ -56,12 +53,12 @@ export function UploadDropzone({
     }
     // Reset input so the same file can be selected again
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
   const isValidVideoFile = (file: File): boolean => {
-    const validTypes = ["video/mp4", "video/quicktime", "video/webm"];
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
     return validTypes.includes(file.type);
   };
 
@@ -73,11 +70,11 @@ export function UploadDropzone({
       onDrop={handleDrop}
       onClick={handleClick}
       className={cn(
-        "relative border-2 border-dashed rounded-lg p-12 transition-colors cursor-pointer",
+        'relative border-2 border-dashed rounded-lg p-12 transition-colors cursor-pointer',
         isDragActive && !isDisabled
-          ? "border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/20"
-          : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900/50",
-        isDisabled && "opacity-50 cursor-not-allowed",
+          ? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/20'
+          : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900/50',
+        isDisabled && 'opacity-50 cursor-not-allowed'
       )}
     >
       <input
